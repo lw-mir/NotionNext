@@ -57,9 +57,12 @@ export async function getStaticProps({ params: { category }, locale }) {
 export async function getStaticPaths() {
   const from = 'category-paths'
   const { categoryOptions } = await fetchGlobalAllData({ from })
+
+  // 构建期 Notion 请求失败或命中旧缓存时可能缺少分类字段，此时交给 fallback 按需生成。
+  const categories = categoryOptions ?? []
   return {
-    paths: Object.keys(categoryOptions).map(category => ({
-      params: { category: categoryOptions[category]?.name }
+    paths: categories.map(category => ({
+      params: { category: category.name }
     })),
     fallback: true
   }
