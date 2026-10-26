@@ -3,6 +3,7 @@ import { siteConfig } from '@/lib/config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { DynamicLayout } from '@/themes/theme'
 import { useRouter } from 'next/router'
+import { searchPosts } from '@/lib/site/personal-blog'
 
 /**
  * 搜索路由
@@ -15,19 +16,7 @@ const Search = props => {
   const router = useRouter()
   const keyword = router?.query?.s
 
-  let filteredPosts
-  // 静态过滤
-  if (keyword) {
-    filteredPosts = posts.filter(post => {
-      const tagContent = post?.tags ? post?.tags.join(' ') : ''
-      const categoryContent = post.category ? post.category.join(' ') : ''
-      const searchContent =
-        post.title + post.summary + tagContent + categoryContent
-      return searchContent.toLowerCase().includes(keyword.toLowerCase())
-    })
-  } else {
-    filteredPosts = []
-  }
+  const filteredPosts = searchPosts(posts, keyword)
 
   props = { ...props, posts: filteredPosts }
 
