@@ -22,6 +22,7 @@ const SEO = props => {
   const webFontUrl = siteConfig('FONT_URL')
 
   useEffect(() => {
+    if (!webFontUrl?.length) return
     // 使用WebFontLoader字体加载
     loadExternalResource(
       'https://cdnjs.cloudflare.com/ajax/libs/webfont/1.6.28/webfontloader.js',
@@ -290,12 +291,14 @@ const getSEOMeta = (props, router, locale) => {
   switch (router.route) {
     case '/':
       return {
-        title: `${siteInfo?.title} | ${siteInfo?.description}`,
+        title: siteInfo?.title || TITLE,
         description: `${siteInfo?.description}`,
         image: `${siteInfo?.pageCover}`,
         slug: '',
         type: 'website'
       }
+    case '/about':
+      return { title: `关于 | ${siteInfo?.title || TITLE}`, description: siteInfo?.description, slug: 'about', type: 'website' }
     case '/archive':
       return {
         title: `${locale.NAV.ARCHIVE} | ${siteInfo?.title}`,
