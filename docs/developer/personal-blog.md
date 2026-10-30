@@ -1,6 +1,6 @@
 # 个人博客与 Markdown 工作流
 
-站点采用白底、深灰正文、深绿点缀的 Nobelium 定制布局。保留文章、专题、关于和搜索，复用 NotionPage 渲染代码、表格、图片和公式。文章链接维持原 slug。
+站点采用上游 Claude 主题：终端风格侧栏、个人资料首页和文章目录。`blog.config.js` 提供默认主题，`lib/site/personal-blog.js` 将服务端 Notion 配置和客户端配置读取统一为 `claude`，并提供个人站名，避免模板配置覆盖主题。复用 NotionPage 渲染代码、表格、图片和公式，文章链接维持原 slug。
 
 ## 内容与发布边界
 
