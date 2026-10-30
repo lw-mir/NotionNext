@@ -29,9 +29,14 @@ export async function getStaticProps({ params: { category }, locale }) {
   // 处理文章页数
   props.postCount = props.posts.length
   // 处理分页
-  if (siteConfig('POST_LIST_STYLE') === 'scroll') {
+  const POST_LIST_STYLE = siteConfig(
+    'POST_LIST_STYLE',
+    'page',
+    props?.NOTION_CONFIG
+  )
+  if (POST_LIST_STYLE === 'scroll') {
     // 滚动列表 给前端返回所有数据
-  } else if (siteConfig('POST_LIST_STYLE') === 'page') {
+  } else if (POST_LIST_STYLE === 'page') {
     props.posts = props.posts?.slice(
       0,
       siteConfig('POSTS_PER_PAGE', 12, props?.NOTION_CONFIG)
@@ -57,12 +62,10 @@ export async function getStaticProps({ params: { category }, locale }) {
 export async function getStaticPaths() {
   const from = 'category-paths'
   const { categoryOptions } = await fetchGlobalAllData({ from })
-
-  // 构建期 Notion 请求失败或命中旧缓存时可能缺少分类字段，此时交给 fallback 按需生成。
-  const categories = categoryOptions ?? []
+  const categories = Array.isArray(categoryOptions) ? categoryOptions : []
   return {
     paths: categories.map(category => ({
-      params: { category: category.name }
+      params: { category: category?.name }
     })),
     fallback: true
   }
