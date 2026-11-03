@@ -171,7 +171,8 @@ export default function ProfileHome(props) {
     () => sanitizeReadmeHtml(readmeSource?.readmeHtml || ''),
     [readmeSource?.readmeHtml]
   )
-  const readmeExcerpt = readmeSource?.excerpt || ''
+  // 未配置 README 页面时显示站点简介，避免首页空卡片。
+  const readmeExcerpt = readmeSource?.excerpt || siteConfig('DESCRIPTION') || ''
 
   const timelinePosts = useMemo(() => {
     return posts

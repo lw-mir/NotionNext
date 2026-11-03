@@ -184,7 +184,40 @@ const LayoutBase = props => {
  * 博客首页
  */
 const LayoutIndex = props => {
-  return <ProfileHome {...props} />
+  return (
+    <>
+      <ProfileHome {...props} />
+      <section className='mt-8' aria-label='最新文章'>
+        <h2 className='text-xl font-semibold mb-4'>最新文章</h2>
+        <BlogListPage {...props} />
+      </section>
+    </>
+  )
+}
+
+/** 个人关于页，复用 Claude 全站布局与导航。 */
+const LayoutAbout = () => {
+  return (
+    <article className='space-y-6 leading-8'>
+      <p className='eyebrow'>关于这个小站</p>
+      <h1 className='text-3xl font-semibold'>你好，我是 Lvwei。</h1>
+      <p className='about-lead'>一名前端工程师，也是一名持续学习的记录者。</p>
+      <h2 className='text-xl font-semibold'>在这里记录什么</h2>
+      <p>
+        前端开发中的实践与问题、AI
+        工具的使用与探索，以及日常生活中的一些想法。希望把零散的经验整理成可以再次找到、再次使用的笔记。
+      </p>
+      <h2 className='text-xl font-semibold'>为什么写下来</h2>
+      <p>
+        写作是整理思考的一种方式。比起追求完美的答案，我更想留下真实的过程：做过什么、遇到了什么问题，又是如何一步步解决的。
+      </p>
+      <p>
+        这个网站会随着学习和实践慢慢更新。欢迎通过{' '}
+        <SmartLink href='/rss/feed.xml'>RSS</SmartLink> 订阅。
+      </p>
+      <SmartLink href='/'>阅读最近的文章 →</SmartLink>
+    </article>
+  )
 }
 
 /**
@@ -377,6 +410,7 @@ const LayoutTagIndex = props => {
 }
 
 export {
+  LayoutAbout,
   Layout404,
   LayoutArchive,
   LayoutBase,

@@ -2,6 +2,14 @@
 
 站点采用上游 Claude 主题：终端风格侧栏、个人资料首页和文章目录。`blog.config.js` 提供默认主题，`lib/site/personal-blog.js` 将服务端 Notion 配置和客户端配置读取统一为 `claude`，并提供个人站名，避免模板配置覆盖主题。复用 NotionPage 渲染代码、表格、图片和公式，文章链接维持原 slug。
 
+## 上游同步（2026-10-30）
+
+已同步 NotionNext 4.11.0，基准提交 `a2aa934b41c51ea95b74cbb67430e38392be01cd`。运行环境要求 Node.js 22–24；Next.js 升级至 15.5.28 系列，依赖按 `yarn.lock` 安装。Claude 主题复用上游侧栏、个人资料、文章列表、目录与移动布局；本地关于页直接使用全站布局，不再嵌入 Nobelium 组件。
+
+新主线包含 Notion 图片签名刷新、渲染与放大修复、搜索生命周期修复、缓存失效与页面重建、RSS 自动发现，以及可选 PWA 和 Content MCP。可选能力保留上游默认开关，不自动启用。
+
+升级后的 `/api/cache` 需要 `CACHE_REVALIDATION_TOKEN` 和 Bearer 请求头；Notion OAuth 从 `/api/auth/notion` 发起。`/api/revalidate` 部分失败返回 500，批量请求可能返回 202 和剩余路径，维护脚本应按返回结果续传。这些配置不得将凭据提交到仓库。
+
 ## 内容与发布边界
 
 `lib/site/personal-blog.js` 是个人站点展示配置，覆盖模板配置中心中的主题、品牌和挂件设置。明确模板通过页面 ID 在服务端数据入口排除，同名新文章不受影响。原文保留在 Notion，可恢复；仓库开发文档和配置中心不删除。分类和标签根据真实已发布文章计数，空分类不显示。

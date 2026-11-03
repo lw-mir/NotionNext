@@ -118,7 +118,7 @@ it('returns the body only after server verification, without the Notion password
   expect(JSON.stringify(props)).not.toContain(digest)
 })
 
-it.each([id, id.replace(/-/g, ''), `other/${id.replace(/-/g, '')}`])(
+it.each([id, id.replace(/-/g, '')])(
   'does not bypass a password through a UUID alias: %s',
   async path => {
     const [prefix, slug] = path.split('/')
@@ -265,23 +265,27 @@ it('turns failed build-time UUID fetches into not-found without exposing a parti
   expect((await resolvePostProps({ prefix: textId, revalidateReason: 'build' })).post).toBeNull()
 })
 
-it('propagates runtime UUID fetch failures so ISR retains an existing child page', async () => {
-  fetchPageFromNotion.mockRejectedValueOnce(new Error('Notion unavailable'))
-  await expect(resolvePostProps({ prefix: textId, revalidateReason: 'stale' })).rejects.toThrow('Notion unavailable')
+// 个人站点只发布库内 Published 页面，不启用上游的 UUID 子页兜底。
+it.each([textId, `other/${id.replace(/-/g, '')}`])('rejects uncatalogued UUID routes without fetching a body: %s', async path => {
+  const [prefix, slug] = path.split('/')
+  const props = await resolvePostProps({ prefix, slug, revalidateReason: 'stale' })
+  expect(props.post).toBeNull()
+  expect(fetchPageFromNotion).not.toHaveBeenCalled()
+  expect(fetchNotionPageBlocks).not.toHaveBeenCalled()
 })
 
-it.each(['fetch-error', 'empty-response', 'invalid-database'])(
-  'does not turn an unavailable site catalog (%s) into a successful runtime 404',
-  async failure => {
-    getOrSetDataWithCache.mockImplementation((_key, loader) => loader())
-    if (failure === 'fetch-error') fetchNotionPageBlocks.mockRejectedValue(new Error('timeout'))
-    else fetchNotionPageBlocks.mockResolvedValue(failure === 'empty-response' ? null : { block: {} })
-    await expect(resolvePostProps({ ...options, revalidateReason: 'stale' })).rejects.toThrow('Site catalog is temporarily unavailable')
-    const fallback = await resolvePostProps({ ...options, revalidateReason: 'build' })
-    expect(fallback.post).toBeNull()
-    expect(fallback.__notionDataUnavailable).toBeUndefined()
+it.each([
+  ['fetch-error', 'timeout'],
+  ['empty-response', 'Notion 数据读取失败'],
+  ['invalid-database', 'Notion 数据库结构无效']
+])('preserves catalog failures during runtime and build: %s', async (failure, message) => {
+  getOrSetDataWithCache.mockImplementation((_key, loader) => loader())
+  if (failure === 'fetch-error') fetchNotionPageBlocks.mockRejectedValue(new Error('timeout'))
+  else fetchNotionPageBlocks.mockResolvedValue(failure === 'empty-response' ? null : { block: {} })
+  for (const revalidateReason of ['stale', 'build']) {
+    await expect(resolvePostProps({ ...options, revalidateReason })).rejects.toThrow(message)
   }
-)
+})
 
 it('keeps cached catalog failures distinguishable without exposing the internal flag', async () => {
   const cached = { __notionDataUnavailable: true, allPages: [], latestPosts: [] }
@@ -343,39 +347,23 @@ it('denies unknown UUID pages without a catalogued ancestor', async () => {
   expect((await resolvePostProps({ prefix: unknown })).post).toBeNull()
 })
 
-it.each(['Published', 'Invisible'])('allows a nested page only after verifying its protected %s catalog ancestor', async status => {
+it.each(['Published', 'Invisible'])('does not expose an uncatalogued child of a %s page', async status => {
   const cached = await getOrSetDataWithCache()
   cached.allPages[0].status = status
   const child = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-  const blocks = body()
-  blocks.block[child] = { value: { id: child, type: 'page', parent_id: id, content: [textId], properties: { title: [['Child']] } } }
-  blocks.block[textId].value.parent_id = child
-  blocks.block[id].value.content = [child]
-  fetchPageFromNotion.mockResolvedValue({ id: child, title: 'Child', slug: child, type: 'Page', tags: [], blockMap: blocks })
-  const locked = await resolvePostProps({ prefix: child })
-  expect(locked.post.blockMap).toBeUndefined()
-  expect(locked.post.password).toBe('protected')
-  expect(JSON.stringify(locked)).not.toContain(marker)
-  expect(JSON.stringify(locked)).not.toContain(digest)
-  const unlocked = await resolvePostProps({ prefix: child, password: secret })
-  expect(JSON.stringify(unlocked.post)).toContain(marker)
-  expect(unlocked.post.blockMap.block[child]).toBeDefined()
-  expect(unlocked.post.blockMap.block[id]).toBeUndefined()
-  expect(JSON.stringify(unlocked)).not.toContain(digest)
-  expect(JSON.stringify(unlocked)).not.toContain(secret)
+  for (const password of [undefined, secret]) {
+    const props = await resolvePostProps({ prefix: child, password })
+    expect(props.post).toBeNull()
+    expect(JSON.stringify(props)).not.toContain(marker)
+    expect(JSON.stringify(props)).not.toContain(digest)
+  }
+  expect(fetchPageFromNotion).not.toHaveBeenCalled()
 })
 
-it('allows an unprotected child of an Invisible catalog page without a password', async () => {
+it('does not render Invisible catalog pages even when they have no password', async () => {
   const cached = await getOrSetDataWithCache()
   cached.allPages[0].status = 'Invisible'
   cached.allPages[0].password = ''
-  const child = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-  const blocks = body()
-  blocks.block[child] = { value: { id: child, type: 'page', parent_id: id, content: [textId], properties: { title: [['Child']] } } }
-  blocks.block[textId].value.parent_id = child
-  fetchPageFromNotion.mockResolvedValueOnce({ id: child, title: 'Child', slug: child, type: 'Page', tags: [], blockMap: blocks })
-  const props = await resolvePostProps({ prefix: child })
-  expect(props.post.blockMap.block[child]).toBeDefined()
-  expect(props.post.password).toBeFalsy()
-  expect(JSON.stringify(props.post)).toContain(marker)
+  expect((await resolvePostProps(options)).post).toBeNull()
+  expect(fetchNotionPageBlocks).not.toHaveBeenCalled()
 })
