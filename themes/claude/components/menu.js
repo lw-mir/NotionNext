@@ -40,6 +40,7 @@ const normalizeMenu = links =>
  */
 export function getClaudeMenuLinks({ locale, customNav, customMenu }) {
   let links = [
+    { icon: 'fas fa-home', name: locale.NAV.INDEX, href: '/' },
     {
       icon: 'fas fa-archive',
       name: locale.NAV.ARCHIVE,
